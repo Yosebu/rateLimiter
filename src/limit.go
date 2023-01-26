@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -71,8 +72,15 @@ func limit(next http.Handler) http.Handler {
 
 		limiter := getVisitor(ipv4Net.String())
 		fmt.Println(ipv4Net.String())
+		contents, err := os.ReadFile("static/errors/429.html")
 		if limiter.Allow() == false {
-			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+			w.WriteHeader(429)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, err := w.Write(contents)
+			if err != nil {
+				http.Error(w, http.StatusText(502), http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 
